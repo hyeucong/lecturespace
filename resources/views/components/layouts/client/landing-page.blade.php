@@ -7,7 +7,6 @@
         <title>LectureSpace</title>
         <!-- Styles / Scripts -->
         @include('partials.head')
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
 
     <body class="bg-gradient-to-b from-[#FDFDFC] to-[#F8F8F6] text-[#1b1b18] min-h-screen flex flex-col">

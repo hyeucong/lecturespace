@@ -62,34 +62,30 @@ class Courses extends Component
 
     private function loadUserCourses()
     {
-        $user = Auth::user();
-        $query = $user->courses()
+        // 1. Define allowed sort fields to prevent SQL injection/errors
+        $sortWhitelist = ['course_name', 'course_code', 'date_start', 'status'];
+        $sortField = in_array($this->sortField, $sortWhitelist) ? $this->sortField : 'course_name';
+        $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
+
+        $this->courses = Auth::user()->courses()
             ->select([
-                'courses.id',
-                'courses.course_name',
-                'courses.course_code',
-                'courses.slug',
-                'courses.lecturer',
-                'courses.status',
-                'courses.date_start',
+                'courses.id', 'courses.course_name', 'courses.course_code',
+                'courses.slug', 'courses.lecturer', 'courses.status', 'courses.date_start',
             ])
             ->wherePivotIn('role', ['creator', 'teacher'])
             ->where('status', '!=', 'archived')
-            ->withCount('enrollments as student_count');
+            ->withCount('enrollments as student_count')
 
-        if (! empty($this->search)) {
-            $query->where(function ($q) {
-                $q->where('course_name', 'like', '%'.$this->search.'%')
-                    ->orWhere('course_code', 'like', '%'.$this->search.'%');
-            });
-        }
+            // 2. Use when() for cleaner logic
+            ->when($this->search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('course_name', 'like', "%{$search}%")
+                        ->orWhere('course_code', 'like', "%{$search}%");
+                });
+            })
 
-        if ($this->sortField === 'date') {
-            $query->orderBy('date_start', $this->sortDirection);
-        } else {
-            $query->orderBy($this->sortField, $this->sortDirection);
-        }
-
-        $this->courses = $query->get();
+            // 3. Apply the validated sort
+            ->orderBy($sortField, $direction)
+            ->get();
     }
 }
